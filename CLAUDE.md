@@ -1,7 +1,5 @@
 # HANDOFF — ifc-fm-checker development
 
-## Chi sono
-Fabio Sbriglio, 29 anni, BIM Expert a Roma. Certificazione BIM Specialist MEP (CEPAS Bureau Veritas), BIM Coordinator in corso (esame ICMQ 25/03/2026). Background tecnico: Python intermedio, Revit/Archicad, IFC, ISO 19650, DM 312/2021, COBie.
 
 ## Cosa abbiamo costruito
 Un tool Python CLI open source chiamato `ifc-fm-checker` che analizza un file IFC e produce un report di FM Readiness (punteggio 0-100) in HTML e/o JSON. 19 test passati, CI GitHub Actions configurato.
