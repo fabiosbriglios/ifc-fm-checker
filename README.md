@@ -266,10 +266,10 @@ pytest tests/ -v
 
 ## Author
 
-**Fabio Sbriglio** — BIM Coordinator | Information Manager | Digital Twin Specialist
+**Fabio Sbriglio** — BIM Expert | Information Manager | Coordination Specialist
 
+BIM Coordination
 Certified BIM Specialist MEP — CEPAS Bureau Veritas  
-BIM Coordinator — ICMQ/Harpaceas  
 Examiner OdV — CEPAS Bureau Veritas
 
 [LinkedIn](https://linkedin.com/in/fabio-sbriglio) · [GitHub](https://github.com/fabio-sbriglio)
