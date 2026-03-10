@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifc-fm-checker"
+version = "1.0.0"
+description = "IFC Facility Management Readiness Checker — verify if an IFC model is ready for CAFM/CMMS import"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Fabio Sbriglio" }]
+keywords = ["BIM", "IFC", "ISO 19650", "Facility Management", "CAFM", "COBie", "Digital Twin"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "ifcopenshell>=0.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.scripts]
+ifc-fm-checker = "ifc_fm_checker.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/fabio-sbriglio/ifc-fm-checker"
+Issues = "https://github.com/fabio-sbriglio/ifc-fm-checker/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ifc_fm_checker*"]

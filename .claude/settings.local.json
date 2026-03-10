@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\fabio\\\\Documents\\\\Claude\\\\Repo\\\\IFC FM Checker\\\\ifc-fm-checker\" && python -m pytest tests/ -v 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\fabio\\\\Documents\\\\Claude\\\\Repo\\\\IFC FM Checker\\\\ifc-fm-checker\" && python -m pytest tests/ -v --tb=short 2>&1)"
+    ]
+  }
+}
