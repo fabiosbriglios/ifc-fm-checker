@@ -337,7 +337,7 @@ def test_runner_produces_json(minimal_ifc, tmp_path):
         data = json.load(f)
     assert "overall_score" in data
     assert "checks" in data
-    assert len(data["checks"]) == 7  # 5 FM checks + IDS + system_assignment
+    assert len(data["checks"]) == 8  # 5 FM checks + IDS + system_assignment + clash_detection
 
 
 def test_runner_all_checks_present(minimal_ifc, tmp_path):
@@ -351,6 +351,7 @@ def test_runner_all_checks_present(minimal_ifc, tmp_path):
     expected = {
         "spatial_structure", "pset_completeness", "asset_data",
         "cobie_readiness", "file_naming", "ids_validation", "system_assignment",
+        "clash_detection",
     }
     assert expected == check_keys
 
@@ -550,6 +551,58 @@ def test_check_systems_does_not_affect_fm_score(minimal_ifc, tmp_path):
         output_format="json",
     )
     # Recompute weighted score — must match runner output regardless of system_assignment score
+    manual_score = int(sum(
+        r["score"] * SCORING_WEIGHTS.get(r["check_key"], 0.0)
+        for r in result["results"]
+    ))
+    assert manual_score == result["overall_score"]
+
+
+# ---------------------------------------------------------------------------
+# Tests: check_clashes
+# ---------------------------------------------------------------------------
+
+def test_check_clashes_runs(minimal_ifc_file):
+    from ifc_fm_checker.checks.check_clashes import run
+    result = run(minimal_ifc_file)
+    assert "score" in result
+    assert "issues" in result
+    assert "stats" in result
+    assert result["stats"]["tolerance_cm"] == 0.0
+
+
+def test_check_clashes_score_range(minimal_ifc_file):
+    from ifc_fm_checker.checks.check_clashes import run
+    result = run(minimal_ifc_file)
+    assert 0 <= result["score"] <= 100
+
+
+def test_check_clashes_zero_tolerance(minimal_ifc_file):
+    from ifc_fm_checker.checks.check_clashes import run
+    result = run(minimal_ifc_file, tolerance_cm=0.0)
+    assert result["stats"]["tolerance_cm"] == 0.0
+    assert 0 <= result["score"] <= 100
+
+
+def test_check_clashes_custom_tolerance(minimal_ifc_file):
+    from ifc_fm_checker.checks.check_clashes import run
+    result = run(minimal_ifc_file, tolerance_cm=5.0)
+    assert result["stats"]["tolerance_cm"] == 5.0
+    assert 0 <= result["score"] <= 100
+
+
+def test_check_clashes_does_not_affect_fm_score(minimal_ifc, tmp_path):
+    """clash_detection weight=0.0 must never change the FM Readiness score."""
+    from ifc_fm_checker.runner import run_all_checks
+    from ifc_fm_checker.config import SCORING_WEIGHTS
+
+    assert SCORING_WEIGHTS.get("clash_detection", 0.0) == 0.0
+
+    result = run_all_checks(
+        ifc_path=minimal_ifc,
+        output_dir=str(tmp_path),
+        output_format="json",
+    )
     manual_score = int(sum(
         r["score"] * SCORING_WEIGHTS.get(r["check_key"], 0.0)
         for r in result["results"]

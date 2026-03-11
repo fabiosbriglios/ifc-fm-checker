@@ -11,7 +11,7 @@ import ifcopenshell
 
 from ifc_fm_checker.config import SCORING_WEIGHTS
 from ifc_fm_checker.utils import get_authoring_tool, get_schema
-from ifc_fm_checker.checks import check_spatial, check_psets, check_assets, check_cobie, check_naming, check_ids, check_systems
+from ifc_fm_checker.checks import check_spatial, check_psets, check_assets, check_cobie, check_naming, check_ids, check_systems, check_clashes
 from ifc_fm_checker.report import html_report
 
 
@@ -19,6 +19,7 @@ def run_all_checks(
     ifc_path: str,
     folder_path: Optional[str] = None,
     ids_path: Optional[str] = None,
+    tolerance_cm: float = 0.0,
     output_dir: Optional[str] = None,
     output_format: str = "html",
     verbose: bool = False,
@@ -63,6 +64,8 @@ def run_all_checks(
             {"ids_path": ids_path}),
         # MEP system assignment — informational (weight=0.0 in v1.1)
         ("system_assignment",  check_systems.run, [ifc_file], {}),
+        # Geometric clash detection — informational (weight=0.0)
+        ("clash_detection",    check_clashes.run, [ifc_file], {"tolerance_cm": tolerance_cm}),
     ]
 
     for check_key, check_fn, args, kwargs in checks:

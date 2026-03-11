@@ -196,6 +196,8 @@ SCORING_WEIGHTS = {
     # once market adoption of IfcSystem in Italian IFC exports is verified.
     # Kept at 0.0 so it never affects the FM Readiness score.
     "system_assignment": 0.0,
+    # clash_detection: informational only — does not affect FM Readiness score.
+    "clash_detection": 0.0,
 }
 
 # Thresholds for traffic-light rating

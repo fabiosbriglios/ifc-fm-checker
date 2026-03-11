@@ -79,6 +79,13 @@ def main():
         default=None,
     )
     parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.0,
+        metavar="CM",
+        help="Clash detection tolerance in cm (default: 0)",
+    )
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Show detailed progress output",
@@ -101,6 +108,8 @@ def main():
         print(f"  Folder : {args.folder}")
     if args.ids:
         print(f"  IDS    : {os.path.basename(args.ids)}")
+    if args.tolerance > 0:
+        print(f"  Tolerance: {args.tolerance} cm")
     print(f"  Format : {args.format}")
     print()
 
@@ -109,6 +118,7 @@ def main():
             ifc_path=args.ifc_file,
             folder_path=args.folder,
             ids_path=args.ids,
+            tolerance_cm=args.tolerance,
             output_dir=args.output_dir,
             output_format=args.format,
             verbose=args.verbose,
@@ -135,6 +145,7 @@ def main():
         "file_naming":        "File Naming ISO 19650(10%)",
         "ids_validation":     "IDS Validation       (opt)",
         "system_assignment":  "MEP Systems           (info)",
+        "clash_detection":    "Clash Detection      (info)",
     }
 
     for check in result["results"]:
