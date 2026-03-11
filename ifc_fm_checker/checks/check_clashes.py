@@ -16,14 +16,36 @@ _SKIP_TYPES = frozenset([
     "IfcBuildingStorey",
 ])
 
-# Element types that legitimately touch each other — skip same-type pairs
+# Element types that legitimately touch each other — skip if EITHER element is in this set
 _SAME_TYPE_SKIP = frozenset([
     "IfcCovering",
     "IfcWall",
+    "IfcWallStandardCase",
     "IfcSlab",
     "IfcRailing",
     "IfcStair",
+    "IfcStairFlight",
     "IfcRamp",
+    "IfcRampFlight",
+    "IfcColumn",
+    "IfcBeam",
+    "IfcMember",
+    "IfcPlate",
+    "IfcCurtainWall",
+    "IfcWindow",
+    "IfcDoor",
+])
+
+# MEP element types — only clashes between MEP and non-MEP are flagged
+_MEP_TYPES = frozenset([
+    "IfcFlowTerminal",
+    "IfcFlowSegment",
+    "IfcFlowFitting",
+    "IfcEnergyConversionDevice",
+    "IfcFlowMovingDevice",
+    "IfcFlowStorageDevice",
+    "IfcFlowController",
+    "IfcDistributionControlElement",
 ])
 
 
@@ -116,10 +138,17 @@ def run(ifc_file, tolerance_cm: float = 0.0, **kwargs) -> Dict[str, Any]:
             type_a = el_a.is_a()
             type_b = el_b.is_a()
 
-            # Skip same-type pairs for types that legitimately touch
-            if type_a == type_b and type_a in _SAME_TYPE_SKIP:
+            # Skip if either element is a structural/architectural type that
+            # legitimately touches other elements
+            if type_a in _SAME_TYPE_SKIP or type_b in _SAME_TYPE_SKIP:
                 if _aabbs_overlap(a["bbox"], b["bbox"], tolerance_model):
                     same_type_filtered += 1
+                continue
+
+            # Only flag MEP vs non-MEP clashes
+            a_is_mep = any(el_a.is_a(t) for t in _MEP_TYPES)
+            b_is_mep = any(el_b.is_a(t) for t in _MEP_TYPES)
+            if not (a_is_mep ^ b_is_mep):
                 continue
 
             if not _aabbs_overlap(a["bbox"], b["bbox"], tolerance_model):
