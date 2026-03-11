@@ -24,3 +24,4 @@ htmlcov/
 *.swo
 CLAUDE.md 
 CLAUDE.md 
+.claude/ 
