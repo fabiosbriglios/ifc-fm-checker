@@ -16,6 +16,16 @@ _SKIP_TYPES = frozenset([
     "IfcBuildingStorey",
 ])
 
+# Element types that legitimately touch each other — skip same-type pairs
+_SAME_TYPE_SKIP = frozenset([
+    "IfcCovering",
+    "IfcWall",
+    "IfcSlab",
+    "IfcRailing",
+    "IfcStair",
+    "IfcRamp",
+])
+
 
 def run(ifc_file, tolerance_cm: float = 0.0, **kwargs) -> Dict[str, Any]:
     """
@@ -46,6 +56,7 @@ def run(ifc_file, tolerance_cm: float = 0.0, **kwargs) -> Dict[str, Any]:
             "stats": {
                 "total_elements_checked": 0,
                 "clash_count": 0,
+                "same_type_filtered": 0,
                 "tolerance_cm": tolerance_cm,
             },
             "description": (
@@ -81,28 +92,56 @@ def run(ifc_file, tolerance_cm: float = 0.0, **kwargs) -> Dict[str, Any]:
 
     total_checked = len(element_bboxes)
     issues: List[Dict[str, Any]] = []
+    same_type_filtered = 0
+
+    # Minimum overlap volume threshold: 1 cm³ converted to model units³
+    unit_scale = 1.0
+    try:
+        import ifcopenshell.util.unit as _unit
+        _us = _unit.calculate_unit_scale(ifc_file)
+        if _us and _us > 0:
+            unit_scale = _us
+    except Exception:
+        pass
+    min_volume_model = (1e-6) / (unit_scale ** 3)  # 1 cm³ = 1e-6 m³
 
     # Pairwise AABB clash detection — O(n²), acceptable for typical BIM models
     for i in range(total_checked):
         for j in range(i + 1, total_checked):
             a = element_bboxes[i]
             b = element_bboxes[j]
-            if not _aabbs_overlap(a["bbox"], b["bbox"], tolerance_model):
-                continue
 
             el_a = a["element"]
             el_b = b["element"]
+            type_a = el_a.is_a()
+            type_b = el_b.is_a()
+
+            # Skip same-type pairs for types that legitimately touch
+            if type_a == type_b and type_a in _SAME_TYPE_SKIP:
+                if _aabbs_overlap(a["bbox"], b["bbox"], tolerance_model):
+                    same_type_filtered += 1
+                continue
+
+            if not _aabbs_overlap(a["bbox"], b["bbox"], tolerance_model):
+                continue
+
+            # Check overlap volume exceeds minimum threshold
+            overlap_vol = _aabb_overlap_volume(a["bbox"], b["bbox"])
+            if overlap_vol < min_volume_model:
+                continue
+
             t1 = a["bbox"]
             t2 = b["bbox"]
             clash_data = {
                 "id1": el_a.GlobalId,
-                "type1": el_a.is_a(),
+                "type1": type_a,
                 "name1": getattr(el_a, "Name", None) or "",
                 "id2": el_b.GlobalId,
-                "type2": el_b.is_a(),
+                "type2": type_b,
                 "name2": getattr(el_b, "Name", None) or "",
                 "storey1": a["storey"],
                 "storey2": b["storey"],
+                "overlap_volume_m3": round(overlap_vol * (unit_scale ** 3), 8),
                 "bbox1": {"xmin": t1[0], "ymin": t1[1], "zmin": t1[2],
                           "xmax": t1[3], "ymax": t1[4], "zmax": t1[5]},
                 "bbox2": {"xmin": t2[0], "ymin": t2[1], "zmin": t2[2],
@@ -112,8 +151,8 @@ def run(ifc_file, tolerance_cm: float = 0.0, **kwargs) -> Dict[str, Any]:
                 "severity": "error",
                 "element": f"{a['label']} vs {b['label']}",
                 "message": (
-                    f"Clash detected between {el_a.is_a()} #{el_a.id()} "
-                    f"and {el_b.is_a()} #{el_b.id()}"
+                    f"Clash detected between {type_a} #{el_a.id()} "
+                    f"and {type_b} #{el_b.id()}"
                 ),
                 "fix": "Review and resolve geometric overlap in authoring tool",
                 "clash_data": clash_data,
@@ -130,6 +169,7 @@ def run(ifc_file, tolerance_cm: float = 0.0, **kwargs) -> Dict[str, Any]:
         "stats": {
             "total_elements_checked": total_checked,
             "clash_count": clash_count,
+            "same_type_filtered": same_type_filtered,
             "tolerance_cm": tolerance_cm,
         },
         "description": (
@@ -170,6 +210,19 @@ def _compute_aabb(
     ys = verts[1::3]
     zs = verts[2::3]
     return (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs))
+
+
+def _aabb_overlap_volume(
+    bbox1: Tuple[float, float, float, float, float, float],
+    bbox2: Tuple[float, float, float, float, float, float],
+) -> float:
+    """Compute the volume of the AABB intersection. Returns 0.0 if no overlap."""
+    ox = min(bbox1[3], bbox2[3]) - max(bbox1[0], bbox2[0])
+    oy = min(bbox1[4], bbox2[4]) - max(bbox1[1], bbox2[1])
+    oz = min(bbox1[5], bbox2[5]) - max(bbox1[2], bbox2[2])
+    if ox <= 0 or oy <= 0 or oz <= 0:
+        return 0.0
+    return ox * oy * oz
 
 
 def _aabbs_overlap(
